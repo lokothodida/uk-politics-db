@@ -4981,12 +4981,14 @@ const init = async (db)=>{
     await loadTables([
         "constituencies",
         "general-election",
-        "eu-referendum", 
+        "eu-referendum",
+        "parties", 
     ], db);
     await Promise.all([
         load2015Election(db),
         load2017Election(db),
-        load2019Election(db), 
+        load2019Election(db),
+        loadParties(db), 
     ]);
 };
 const loadTables = (tables, db)=>{
@@ -5058,6 +5060,17 @@ const load2019Election = async (db)=>{
             item.party_abbreviation,
             `${item.firstname} ${item.surname}`,
             parseInt(item.votes, 10), 
+        ]);
+    });
+};
+const loadParties = async (db)=>{
+    const { data  } = await loadCsv("parties");
+    data.map((item)=>{
+        db.exec(`INSERT INTO parties(id, name, nickname, colour) VALUES(?, ?, ?, ?)`, [
+            item.id,
+            item.name,
+            item.nickname,
+            item.colour, 
         ]);
     });
 };
