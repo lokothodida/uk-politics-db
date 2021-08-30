@@ -4977,6 +4977,18 @@ Mt1.install = function t13(e12) {
     o6.beforeRouteEnter = o6.beforeRouteLeave = o6.beforeRouteUpdate = o6.created;
 }, Mt1.version = "3.5.2", Mt1.isNavigationFailure = xt1, Mt1.NavigationFailureType = yt1, Mt1.START_LOCATION = p2, D1 && window.Vue && window.Vue.use(Mt1);
 const baseFileUrl = "https://raw.githubusercontent.com/lokothodida/uk-politics-db/gh-pages/";
+const init = async (db)=>{
+    await loadTables([
+        "constituencies",
+        "general-election",
+        "eu-referendum", 
+    ], db);
+    await Promise.all([
+        load2015Election(db),
+        load2017Election(db),
+        load2019Election(db), 
+    ]);
+};
 const loadTables = (tables, db)=>{
     return Promise.all(tables.map(async (table)=>{
         const resp = await fetch(`${baseFileUrl}/tables/${table}.sql`);
@@ -4994,6 +5006,58 @@ const load2015Election = async (db)=>{
             item.ons_id,
             item.ons_region_id,
             item.constituency_name
+        ]);
+        db.exec(`INSERT INTO general_elections(ons_id, date, party, candidate, votes) VALUES(?, ?, ?, ?, ?)`, [
+            item.ons_id,
+            "2015",
+            item.party_abbreviation,
+            `${item.firstname} ${item.surname}`,
+            parseInt(item.votes, 10), 
+        ]);
+    });
+};
+const load2017Election = async (db)=>{
+    const abbreviations = {
+        con: "Con",
+        lab: "Lab",
+        ld: "LD",
+        ukip: "UKIP",
+        green: "Green",
+        snp: "SNP",
+        pc: "PC",
+        dup: "DUP",
+        sf: "SF",
+        sdlp: "SDLP",
+        uup: "UUP",
+        alliance: "Alliance",
+        other: "Ind"
+    };
+    const { data  } = await loadCsv("ge-2017");
+    data.map((item)=>{
+        for(const abbr in abbreviations){
+            const votes = parseInt(item[abbr], 10);
+            if (isNaN(votes)) {
+                continue;
+            }
+            db.exec(`INSERT INTO general_elections(ons_id, date, party, candidate, votes) VALUES(?, ?, ?, ?, ?)`, [
+                item.ons_id,
+                "2017",
+                abbreviations[abbr],
+                `${abbreviations[abbr]}: TO ADD NAME`,
+                votes, 
+            ]);
+        }
+    });
+};
+const load2019Election = async (db)=>{
+    const { data  } = await loadCsv("ge-2019");
+    data.map((item)=>{
+        db.exec(`INSERT INTO general_elections(ons_id, date, party, candidate, votes) VALUES(?, ?, ?, ?, ?)`, [
+            item.ons_id,
+            "2019",
+            item.party_abbreviation,
+            `${item.firstname} ${item.surname}`,
+            parseInt(item.votes, 10), 
         ]);
     });
 };
@@ -5058,10 +5122,7 @@ const HomePage = (db1)=>({
         async mounted () {
             try {
                 this.loadQueryFromUrl();
-                await loadTables([
-                    "constituencies"
-                ], db1);
-                await load2015Election(db1);
+                await init(db1);
             } catch (err) {
                 this.error = true;
                 this.errorMessage = err.message;
@@ -5074,12 +5135,19 @@ const HomePage = (db1)=>({
             "$route": "loadQueryFromUrl"
         },
         methods: {
+            baseUrl () {
+                return `${window.location.href.replace(window.location.hash, "")}`;
+            },
             share () {
-                this.url = `${window.location.origin}/#/?query=` + encodeURIComponent(this.query);
+                this.url = `${this.baseUrl()}#/?query=` + encodeURIComponent(this.query);
             },
             loadQueryFromUrl () {
-                const query = decodeURIComponent(this.$route.query.query);
-                if (query.length === 0) {
+                const values = this.$route.query;
+                if (!("query" in values)) {
+                    return;
+                }
+                const query = decodeURIComponent(values.query);
+                if (!query) {
                     return;
                 }
                 this.query = query;
