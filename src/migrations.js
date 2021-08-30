@@ -6,7 +6,11 @@ export const init = async (db) => {
     "general-election",
     "eu-referendum",
   ], db);
-  await load2015Election(db);
+  await Promise.all([
+    load2015Election(db),
+    load2017Election(db),
+    load2019Election(db),
+  ]);
 };
 
 export const loadTables = (tables, db) => {
@@ -28,6 +32,72 @@ export const load2015Election = async (db) => {
     db.exec(
       `INSERT OR IGNORE INTO constituencies(ons_id, ons_region_id, constituency_name) VALUES(?, ?, ?)`,
       [item.ons_id, item.ons_region_id, item.constituency_name],
+    );
+
+    db.exec(
+      `INSERT INTO general_elections(ons_id, date, party, candidate, votes) VALUES(?, ?, ?, ?, ?)`,
+      [
+        item.ons_id,
+        "2015",
+        item.party_abbreviation,
+        `${item.firstname} ${item.surname}`,
+        parseInt(item.votes, 10),
+      ],
+    );
+  });
+};
+
+export const load2017Election = async (db) => {
+  const abbreviations = {
+    con: "Con",
+    lab: "Lab",
+    ld: "LD",
+    ukip: "UKIP",
+    green: "Green",
+    snp: "SNP",
+    pc: "PC",
+    dup: "DUP",
+    sf: "SF",
+    sdlp: "SDLP",
+    uup: "UUP",
+    alliance: "Alliance",
+    other: "Ind",
+  };
+
+  const { data } = await loadCsv("ge-2017");
+
+  data.map((item) => {
+    for (const abbr in abbreviations) {
+      const votes = parseInt(item[abbr], 10);
+      if (isNaN(votes)) {
+        continue;
+      }
+      db.exec(
+        `INSERT INTO general_elections(ons_id, date, party, candidate, votes) VALUES(?, ?, ?, ?, ?)`,
+        [
+          item.ons_id,
+          "2017",
+          abbreviations[abbr],
+          `${abbreviations[abbr]}: TO ADD NAME`,
+          votes,
+        ],
+      );
+    }
+  });
+};
+
+export const load2019Election = async (db) => {
+  const { data } = await loadCsv("ge-2019");
+  data.map((item) => {
+    db.exec(
+      `INSERT INTO general_elections(ons_id, date, party, candidate, votes) VALUES(?, ?, ?, ?, ?)`,
+      [
+        item.ons_id,
+        "2019",
+        item.party_abbreviation,
+        `${item.firstname} ${item.surname}`,
+        parseInt(item.votes, 10),
+      ],
     );
   });
 };
