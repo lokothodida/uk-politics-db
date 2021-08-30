@@ -4,3 +4,12 @@ services:
 script:
   - docker-compose run deno deno bundle src/index.js dist/bundle.js
 
+
+deploy:
+  provider: pages
+  skip_cleanuo: true
+  github_token: $GITHUBTOKEN
+  keep_history: true
+  on:
+    branch: main
+  local_dir: ./dist
