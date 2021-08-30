@@ -5,6 +5,7 @@ import { HelpPage } from "./pages/help.js";
 import { ErrorPage } from "./pages/error.js";
 import { HomePage } from "./pages/home.js";
 import { init } from "./migrations.js";
+import { ExamplesPage } from "./pages/examples.js";
 
 Vue.use(VueRouter);
 
@@ -33,6 +34,7 @@ new Vue({
           <router-link to="/" class="navbar-item">Home</router-link>
           <router-link to="/about" class="navbar-item">About</router-link>
           <router-link to="/help" class="navbar-item">Help</router-link>
+          <router-link to="/examples" class="navbar-item">Examples</router-link>
         </div>
       </div>
     </nav>
@@ -62,16 +64,24 @@ new Vue({
   router: new VueRouter({
     routes: [
       {
+        name: "home",
         path: "/",
         component: HomePage(db),
       },
       {
+        name: "about",
         path: "/about",
         component: AboutPage,
       },
       {
+        name: "help",
         path: "/help",
         component: HelpPage(db),
+      },
+      {
+        name: "examples",
+        path: "/examples",
+        component: ExamplesPage,
       },
       {
         name: "error",
