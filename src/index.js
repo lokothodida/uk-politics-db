@@ -3,6 +3,7 @@ import VueRouter from "vue-router";
 import { init } from "./migrations.js";
 import { PieChart } from "./components/pie-chart.js";
 import { CodeEditor } from "./components/code-editor.js";
+import { LineChart } from "./components/line-chart.js";
 
 Vue.use(VueRouter);
 
@@ -18,6 +19,7 @@ const HomePage = (db) => ({
   components: {
     "code-editor": CodeEditor,
     "pie-chart": PieChart,
+    "line-chart": LineChart,
   },
 
   data() {
@@ -58,9 +60,10 @@ const HomePage = (db) => ({
             <div v-for="(result, idx) in results">
                 <div class="select">
                   <select :key="resultKey(idx, 'select')" v-model="results[idx].chartType">
-                      <option disabled>--Select Chart Type</option>
+                      <option disabled>-- Select Chart Type --</option>
                       <option value="table">Table</option>
                       <option value="pie">Pie Chart</option>
+                      <option value="line">Line Chart</option>
                   </select>
                 </div>
 
@@ -78,6 +81,7 @@ const HomePage = (db) => ({
                 </table>
 
                 <pie-chart :key="resultKey(idx, 'pie')" v-if="results[idx].chartType === 'pie'" :data="pieChart(result)"></pie-chart>
+                <line-chart :key="resultKey(idx, 'line')" v-if="results[idx].chartType === 'line'" :data="lineChart(result)"></line-chart>
             </div>
         </div>
     </div>`,
@@ -153,6 +157,20 @@ const HomePage = (db) => ({
       return result.values.map((item) => ({
         label: item[labelIdx],
         value: item[valueIdx],
+        colour: item[colourIdx] || "#cccccc",
+      }));
+    },
+
+    lineChart(result) {
+      const xIdx = result.columns.indexOf("x");
+      const yIdx = result.columns.indexOf("y");
+      const seriesIdx = result.columns.indexOf("series");
+      const colourIdx = result.columns.indexOf("colour");
+
+      return result.values.map((item) => ({
+        series: item[seriesIdx],
+        x: item[xIdx],
+        y: item[yIdx],
         colour: item[colourIdx] || "#cccccc",
       }));
     },
