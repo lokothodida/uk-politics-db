@@ -25492,7 +25492,7 @@ const HomePage = (db1)=>({
             };
         },
         template: `<div>
-        <h1>UK Politics DB</h1>
+        <h1 class="title">UK Politics Database</h1>
         <div v-if="loading">
             Loading...
         </div>
@@ -25502,23 +25502,30 @@ const HomePage = (db1)=>({
         </div>
 
         <div v-else>
-            <p>Write your SQL queries into the below space and hit <code>Execute</code> to see results.</p>
+            <p>Write your SQL(ite) queries into the below space and hit <code>Execute</code> to see results.</p>
             <div>
               <code-editor mode="sql" v-model="query"></code-editor>
             </div>
 
-            <button v-on:click.prevent="execute">Execute</button>
-            <button v-on:click.prevent="share">Share</button>
+            <button class="button" v-on:click.prevent="execute">Execute</button>
+            <button class="button" v-on:click.prevent="share">Share</button>
 
-            <p v-if="url"><input type="text" disabled v-model="url"></p>
+            <div v-if="url">
+              <p>Share this URL for others to see your query:</p>
+              <input class="input" type="text" disabled v-model="url"/>
+              <button class="button" v-on:click.prevent="copyUrl">📋</button>
+            </div>
 
             <div v-for="(result, idx) in results">
-                <select :key="resultKey(idx, 'select')" v-model="results[idx].chartType">
-                    <option value="pie">Pie Chart</option>
-                    <option value="table">Table</option>
-                </select>
+                <div class="select">
+                  <select :key="resultKey(idx, 'select')" v-model="results[idx].chartType">
+                      <option disabled>--Select Chart Type</option>
+                      <option value="table">Table</option>
+                      <option value="pie">Pie Chart</option>
+                  </select>
+                </div>
 
-                <table :key="resultKey(idx, 'table')" v-if="result.chartType === 'table'">
+                <table class="table" :key="resultKey(idx, 'table')" v-if="result.chartType === 'table'">
                     <thead>
                         <tr>
                             <th v-for="column in result.columns">{{column}}</th>
@@ -25556,6 +25563,9 @@ const HomePage = (db1)=>({
             },
             share () {
                 this.url = `${this.baseUrl()}#/?query=` + encodeURIComponent(this.query);
+            },
+            copyUrl () {
+                window.navigator.clipboard.writeText(this.url);
             },
             loadQueryFromUrl () {
                 const values = this.$route.query;
