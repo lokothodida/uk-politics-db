@@ -3,10 +3,37 @@ export const loadTables = (tables, db) => {
     const resp = await fetch(`/tables/${table}.sql`);
 
     if (resp.status >= 400) {
-      throw new Error(`File ${table}.sql not found`);
+      throw fileNotFound(`${table}.sql`);
     }
 
     const script = await resp.text();
     db.exec(script);
   }));
 };
+
+export const load2015Election = async (db) => {
+  const { data } = await loadCsv("ge-2015");
+  data.map((item) => {
+    db.exec(
+      `INSERT OR IGNORE INTO constituencies(ons_id, ons_region_id, constituency_name) VALUES(?, ?, ?)`,
+      [item.ons_id, item.ons_region_id, item.constituency_name],
+    );
+  });
+};
+
+export const loadCsv = async (name) => {
+  const resp = await fetch(`/data/${name}.csv`);
+
+  if (resp.status >= 400) {
+    throw fileNotFound(`${name}.csv`);
+  }
+
+  const blob = await resp.text();
+
+  return Papa.parse(blob, {
+    header: true,
+    skipEmptyLines: true,
+  });
+};
+
+const fileNotFound = (file) => new Error(`File ${file} not found`);

@@ -1,6 +1,6 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import { loadTables } from "./migrations.js";
+import { load2015Election, loadTables } from "./migrations.js";
 
 Vue.use(VueRouter);
 
@@ -52,9 +52,11 @@ const HomePage = (db) => ({
   async mounted() {
     try {
       await loadTables(["constituencies"], db);
+      await load2015Election(db);
     } catch (err) {
       this.error = true;
       this.errorMessage = err.message;
+      console.error(err);
     } finally {
       this.loading = false;
     }
