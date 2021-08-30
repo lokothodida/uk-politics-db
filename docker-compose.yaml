@@ -1,0 +1,9 @@
+version: "3"
+
+services:
+    deno:
+        stdin_open: true
+        working_dir: /app
+        image: denoland/deno:alpine
+        volumes:
+            - ./:/app
