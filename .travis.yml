@@ -2,9 +2,8 @@ services:
   - docker
 
 script:
-  - docker-compose run deno deno lint src
-  - docker-compose run deno deno bundle src/index.js dist/bundle.js
-  - cp src/index.html dist/index.html
+  - make lint
+  - make build
 
 deploy:
   provider: pages
