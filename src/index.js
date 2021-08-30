@@ -19,6 +19,7 @@ const HomePage = (db) => ({
       errorMessage: "",
       query: "",
       results: [],
+      url: "",
     };
   },
   template: `<div>
@@ -26,13 +27,15 @@ const HomePage = (db) => ({
         <div v-if="loading">
             Loading...
         </div>
-        <div v-if="error">
+        <div v-else-if="error">
             <code>{{errorMessage}}</code>
         </div>
         <div v-else>
             <p>Write your SQL queries into the below space and hit <code>Execute</code> to see results.</p>
             <div><textarea v-model="query"></textarea></div>
             <button v-on:click.prevent="execute">Execute</button>
+            <button v-on:click.prevent="share">Share</button>
+            <p v-if="url"><input type="text" disabled v-model="url"></p>
 
             <table v-for="result in results">
                 <thead>
@@ -51,6 +54,7 @@ const HomePage = (db) => ({
 
   async mounted() {
     try {
+      this.loadQueryFromUrl();
       await loadTables(["constituencies"], db);
       await load2015Election(db);
     } catch (err) {
@@ -62,7 +66,26 @@ const HomePage = (db) => ({
     }
   },
 
+  watch: {
+    "$route": "loadQueryFromUrl",
+  },
+
   methods: {
+    share() {
+      this.url = `${window.location.origin}/#/?query=` +
+        encodeURIComponent(this.query);
+    },
+
+    loadQueryFromUrl() {
+      const query = decodeURIComponent(this.$route.query.query);
+
+      if (query.length === 0) {
+        return;
+      }
+
+      this.query = query;
+    },
+
     execute() {
       try {
         this.results = db.exec(this.query);
