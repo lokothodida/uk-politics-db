@@ -4994,7 +4994,7 @@ const HelpPage = (db)=>({
     <h2 class="subtitle">List of all Tables</h2>
 
     <div v-for="table in tables">
-        <h3>{{table.name}}</h3>
+        <h3><code>{{table.name}}</code></h3>
         <table class="table">
             <thead>
                 <tr>
@@ -5012,14 +5012,21 @@ const HelpPage = (db)=>({
     </div>
   </div>`,
         mounted () {
-            const tableNames = db.exec("SELECT DISTINCT(tbl_name) FROM sqlite_master WHERE type = 'table'");
-            this.tables = tableNames[0].values.map(([name])=>{
-                const results = db.exec(`PRAGMA TABLE_INFO(${name})`);
-                return {
-                    name: name,
-                    ...results[0]
-                };
-            });
+            this.tables = [].concat(this.load("table"), this.load("view"));
+        },
+        methods: {
+            load (tableType) {
+                const tableNames = db.exec("SELECT DISTINCT(tbl_name) FROM sqlite_master WHERE type = ?", [
+                    tableType
+                ]);
+                return tableNames[0].values.map(([name])=>{
+                    const results = db.exec(`PRAGMA TABLE_INFO(${name})`);
+                    return {
+                        name: name,
+                        ...results[0]
+                    };
+                });
+            }
         }
     })
 ;
@@ -25718,6 +25725,45 @@ const loadCsv = async (name)=>{
 };
 const fileNotFound = (file)=>new Error(`File ${file} not found`)
 ;
+const examples = {
+    "2019 General Election Vote Share": `SELECT
+	sum(votes) as value,
+    party as label,
+    colour
+FROM general_elections, parties
+WHERE date = '2019' AND party = parties.id
+GROUP BY party
+ORDER BY value DESC;`
+};
+const ExamplesPage = {
+    data () {
+        return {
+            examples
+        };
+    },
+    name: "ExamplesPage",
+    template: `<div>
+      <h1 class="title">Examples</h1>
+
+      <div class="content">
+        <ul>
+          <li v-for="(query, name) in examples">
+            <router-link :to="url(query)">{{name}}</router-link>
+          </li>
+        </ul>
+      </div>
+    </div>`,
+    methods: {
+        url (query) {
+            return {
+                name: "home",
+                query: {
+                    query: encodeURIComponent(query)
+                }
+            };
+        }
+    }
+};
 gn.use(Mt1);
 const SQL = await initSqlJs({
     locateFile: (file)=>`https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.1/${file}`
@@ -25741,6 +25787,7 @@ new gn({
           <router-link to="/" class="navbar-item">Home</router-link>
           <router-link to="/about" class="navbar-item">About</router-link>
           <router-link to="/help" class="navbar-item">Help</router-link>
+          <router-link to="/examples" class="navbar-item">Examples</router-link>
         </div>
       </div>
     </nav>
@@ -25767,16 +25814,24 @@ new gn({
     router: new Mt1({
         routes: [
             {
+                name: "home",
                 path: "/",
                 component: HomePage(db)
             },
             {
+                name: "about",
                 path: "/about",
                 component: AboutPage
             },
             {
+                name: "help",
                 path: "/help",
                 component: HelpPage(db)
+            },
+            {
+                name: "examples",
+                path: "/examples",
+                component: ExamplesPage
             },
             {
                 name: "error",
