@@ -4976,6 +4976,62 @@ Mt1.install = function t13(e12) {
     const o6 = e12.config.optionMergeStrategies;
     o6.beforeRouteEnter = o6.beforeRouteLeave = o6.beforeRouteUpdate = o6.created;
 }, Mt1.version = "3.5.2", Mt1.isNavigationFailure = xt1, Mt1.NavigationFailureType = yt1, Mt1.START_LOCATION = p2, D1 && window.Vue && window.Vue.use(Mt1);
+const AboutPage = {
+    template: `<div>
+        <h1 class="title">About</h1>
+        <p>WIP...</p>
+    </div>`
+};
+const HelpPage = (db)=>({
+        data () {
+            return {
+                tables: []
+            };
+        },
+        template: `<div>
+    <h1 class="title">Help</h1>
+
+    <h2 class="subtitle">List of all Tables</h2>
+
+    <div v-for="table in tables">
+        <h3>{{table.name}}</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Column</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="row in table.values">
+                    <td>{{row[1]}}</td>
+                    <td>{{row[2]}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+  </div>`,
+        mounted () {
+            const tableNames = db.exec("SELECT DISTINCT(tbl_name) FROM sqlite_master WHERE type = 'table'");
+            this.tables = tableNames[0].values.map(([name])=>{
+                const results = db.exec(`PRAGMA TABLE_INFO(${name})`);
+                return {
+                    name: name,
+                    ...results[0]
+                };
+            });
+        }
+    })
+;
+const ErrorPage = {
+    props: [
+        "message", 
+    ],
+    template: `<div>
+        <h1 class="title">Unexpected Error!</h1>
+        <p><code>{{message}}</code></p>
+    </div>`
+};
 (function(global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() : typeof define === 'function' && define.amd ? define(factory) : (global = global || self, global.CodeMirror = factory());
 })(this, function() {
@@ -25405,6 +25461,152 @@ const LineChart = {
         });
     }
 };
+const HomePage = (db)=>({
+        name: "HomePage",
+        components: {
+            "code-editor": CodeEditor,
+            "pie-chart": PieChart,
+            "line-chart": LineChart
+        },
+        data () {
+            return {
+                loading: true,
+                error: false,
+                errorMessage: "",
+                query: "",
+                results: [],
+                url: ""
+            };
+        },
+        template: `<div>
+          <h1 class="title">UK Politics Database</h1>
+          <div v-if="loading">
+              Loading...
+          </div>
+
+          <div v-else-if="error">
+              <code>{{errorMessage}}</code>
+          </div>
+
+          <div v-else>
+              <p>Write your SQL(ite) queries into the below space and hit <code>Execute</code> to see results.</p>
+              <div>
+                <code-editor mode="sql" v-model="query"></code-editor>
+              </div>
+
+              <button class="button" v-on:click.prevent="execute">Execute</button>
+              <button class="button" v-on:click.prevent="share">Share</button>
+
+              <div v-if="url">
+                <p>Share this URL for others to see your query:</p>
+                <input class="input" type="text" disabled v-model="url"/>
+                <button class="button" v-on:click.prevent="copyUrl">📋</button>
+              </div>
+
+              <div v-for="(result, idx) in results">
+                  <div class="select">
+                    <select :key="resultKey(idx, 'select')" v-model="results[idx].chartType">
+                        <option disabled>-- Select Chart Type --</option>
+                        <option value="table">Table</option>
+                        <option value="pie">Pie Chart</option>
+                        <option value="line">Line Chart</option>
+                    </select>
+                  </div>
+
+                  <table class="table" :key="resultKey(idx, 'table')" v-if="result.chartType === 'table'">
+                      <thead>
+                          <tr>
+                              <th v-for="column in result.columns">{{column}}</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          <tr v-for="row in result.values">
+                              <td v-for="field in row">{{field}}</td>
+                          </tr>
+                      </tbody>
+                  </table>
+
+                  <pie-chart :key="resultKey(idx, 'pie')" v-if="results[idx].chartType === 'pie'" :data="pieChart(result)"></pie-chart>
+                  <line-chart :key="resultKey(idx, 'line')" v-if="results[idx].chartType === 'line'" :data="lineChart(result)"></line-chart>
+              </div>
+          </div>
+      </div>`,
+        mounted () {
+            try {
+                this.loadQueryFromUrl();
+            } catch (err) {
+                this.error = true;
+                this.errorMessage = err.message;
+                console.error(err);
+            } finally{
+                this.loading = false;
+            }
+        },
+        watch: {
+            "$route": "loadQueryFromUrl"
+        },
+        methods: {
+            baseUrl () {
+                return `${window.location.href.replace(window.location.hash, "")}`;
+            },
+            share () {
+                this.url = `${this.baseUrl()}#/?query=` + encodeURIComponent(this.query);
+            },
+            copyUrl () {
+                window.navigator.clipboard.writeText(this.url);
+            },
+            loadQueryFromUrl () {
+                const values = this.$route.query;
+                if (!("query" in values)) {
+                    return;
+                }
+                const query = decodeURIComponent(values.query);
+                if (!query) {
+                    return;
+                }
+                this.query = query;
+            },
+            execute () {
+                try {
+                    this.results = db.exec(this.query);
+                    this.results = this.results.map((result)=>{
+                        this.$set(result, "chartType", "table");
+                        return result;
+                    });
+                } catch (err) {
+                    alert(`Failed to execute query: ${err.message}`);
+                }
+            },
+            resultKey (idx, type) {
+                return `result-${type}-${idx}`;
+            },
+            pieChart (result) {
+                const valueIdx = result.columns.indexOf("value");
+                const labelIdx = result.columns.indexOf("label");
+                const colourIdx = result.columns.indexOf("colour");
+                return result.values.map((item)=>({
+                        label: item[labelIdx],
+                        value: item[valueIdx],
+                        colour: item[colourIdx] || "#cccccc"
+                    })
+                );
+            },
+            lineChart (result) {
+                const xIdx = result.columns.indexOf("x");
+                const yIdx = result.columns.indexOf("y");
+                const seriesIdx = result.columns.indexOf("series");
+                const colourIdx = result.columns.indexOf("colour");
+                return result.values.map((item)=>({
+                        series: item[seriesIdx],
+                        x: item[xIdx],
+                        y: item[yIdx],
+                        colour: item[colourIdx] || "#cccccc"
+                    })
+                );
+            }
+        }
+    })
+;
 const baseFileUrl = "https://raw.githubusercontent.com/lokothodida/uk-politics-db/gh-pages/";
 const init = async (db)=>{
     await loadTables([
@@ -25516,164 +25718,71 @@ const loadCsv = async (name)=>{
 };
 const fileNotFound = (file)=>new Error(`File ${file} not found`)
 ;
-const HomePage = (db)=>({
-        name: "HomePage",
-        components: {
-            "code-editor": CodeEditor,
-            "pie-chart": PieChart,
-            "line-chart": LineChart
-        },
-        data () {
-            return {
-                loading: true,
-                error: false,
-                errorMessage: "",
-                query: "",
-                results: [],
-                url: ""
-            };
-        },
-        template: `<div>
-          <h1 class="title">UK Politics Database</h1>
-          <div v-if="loading">
-              Loading...
-          </div>
-
-          <div v-else-if="error">
-              <code>{{errorMessage}}</code>
-          </div>
-
-          <div v-else>
-              <p>Write your SQL(ite) queries into the below space and hit <code>Execute</code> to see results.</p>
-              <div>
-                <code-editor mode="sql" v-model="query"></code-editor>
-              </div>
-
-              <button class="button" v-on:click.prevent="execute">Execute</button>
-              <button class="button" v-on:click.prevent="share">Share</button>
-
-              <div v-if="url">
-                <p>Share this URL for others to see your query:</p>
-                <input class="input" type="text" disabled v-model="url"/>
-                <button class="button" v-on:click.prevent="copyUrl">📋</button>
-              </div>
-
-              <div v-for="(result, idx) in results">
-                  <div class="select">
-                    <select :key="resultKey(idx, 'select')" v-model="results[idx].chartType">
-                        <option disabled>-- Select Chart Type --</option>
-                        <option value="table">Table</option>
-                        <option value="pie">Pie Chart</option>
-                        <option value="line">Line Chart</option>
-                    </select>
-                  </div>
-
-                  <table class="table" :key="resultKey(idx, 'table')" v-if="result.chartType === 'table'">
-                      <thead>
-                          <tr>
-                              <th v-for="column in result.columns">{{column}}</th>
-                          </tr>
-                      </thead>
-                      <tbody>
-                          <tr v-for="row in result.values">
-                              <td v-for="field in row">{{field}}</td>
-                          </tr>
-                      </tbody>
-                  </table>
-
-                  <pie-chart :key="resultKey(idx, 'pie')" v-if="results[idx].chartType === 'pie'" :data="pieChart(result)"></pie-chart>
-                  <line-chart :key="resultKey(idx, 'line')" v-if="results[idx].chartType === 'line'" :data="lineChart(result)"></line-chart>
-              </div>
-          </div>
-      </div>`,
-        async mounted () {
-            try {
-                this.loadQueryFromUrl();
-                await init(db);
-            } catch (err) {
-                this.error = true;
-                this.errorMessage = err.message;
-                console.error(err);
-            } finally{
-                this.loading = false;
-            }
-        },
-        watch: {
-            "$route": "loadQueryFromUrl"
-        },
-        methods: {
-            baseUrl () {
-                return `${window.location.href.replace(window.location.hash, "")}`;
-            },
-            share () {
-                this.url = `${this.baseUrl()}#/?query=` + encodeURIComponent(this.query);
-            },
-            copyUrl () {
-                window.navigator.clipboard.writeText(this.url);
-            },
-            loadQueryFromUrl () {
-                const values = this.$route.query;
-                if (!("query" in values)) {
-                    return;
-                }
-                const query = decodeURIComponent(values.query);
-                if (!query) {
-                    return;
-                }
-                this.query = query;
-            },
-            execute () {
-                try {
-                    this.results = db.exec(this.query);
-                    this.results = this.results.map((result)=>{
-                        this.$set(result, "chartType", "table");
-                        return result;
-                    });
-                } catch (err) {
-                    alert(`Failed to execute query: ${err.message}`);
-                }
-            },
-            resultKey (idx, type) {
-                return `result-${type}-${idx}`;
-            },
-            pieChart (result) {
-                const valueIdx = result.columns.indexOf("value");
-                const labelIdx = result.columns.indexOf("label");
-                const colourIdx = result.columns.indexOf("colour");
-                return result.values.map((item)=>({
-                        label: item[labelIdx],
-                        value: item[valueIdx],
-                        colour: item[colourIdx] || "#cccccc"
-                    })
-                );
-            },
-            lineChart (result) {
-                const xIdx = result.columns.indexOf("x");
-                const yIdx = result.columns.indexOf("y");
-                const seriesIdx = result.columns.indexOf("series");
-                const colourIdx = result.columns.indexOf("colour");
-                return result.values.map((item)=>({
-                        series: item[seriesIdx],
-                        x: item[xIdx],
-                        y: item[yIdx],
-                        colour: item[colourIdx] || "#cccccc"
-                    })
-                );
-            }
-        }
-    })
-;
 gn.use(Mt1);
 const SQL = await initSqlJs({
     locateFile: (file)=>`https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.1/${file}`
 });
 const db = new SQL.Database(new Uint8Array([]));
 new gn({
+    data () {
+        return {
+            loading: true
+        };
+    },
+    template: `<div>
+    <nav class="navbar" role="navigation">
+      <div class="navbar-brand">
+        <div class="navbar-item">
+          <strong>UK Politics Database</strong>
+        </div>
+      </div>
+      <div class="navbar-menu">
+        <div class="navbar-start">
+          <router-link to="/" class="navbar-item">Home</router-link>
+          <router-link to="/about" class="navbar-item">About</router-link>
+          <router-link to="/help" class="navbar-item">Help</router-link>
+        </div>
+      </div>
+    </nav>
+    <router-view v-if="!loading"></router-view>
+    <div v-else>
+      Loading...
+    </div>
+  </div>`,
+    async mounted () {
+        try {
+            await init(db);
+        } catch (error) {
+            console.error(error);
+            this.$router.push({
+                name: "error",
+                params: {
+                    message: error.message
+                }
+            });
+        } finally{
+            this.loading = false;
+        }
+    },
     router: new Mt1({
         routes: [
             {
                 path: "/",
                 component: HomePage(db)
+            },
+            {
+                path: "/about",
+                component: AboutPage
+            },
+            {
+                path: "/help",
+                component: HelpPage(db)
+            },
+            {
+                name: "error",
+                path: "/error",
+                component: ErrorPage,
+                props: true
             }, 
         ]
     })
