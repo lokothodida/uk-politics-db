@@ -10,32 +10,67 @@ const SQL = await initSqlJs({
 
 const db = new SQL.Database(new Uint8Array([]));
 
+const loadTables = (tables, db) => {
+  return Promise.all(tables.map(async (table) => {
+    const resp = await fetch(`/tables/${table}.sql`);
+
+    if (resp.status >= 400) {
+      throw new Error(`File ${table}.sql not found`);
+    }
+
+    const script = await resp.text();
+    db.exec(script);
+  }));
+};
+
 const HomePage = (db) => ({
   data() {
     return {
+      loading: true,
+      error: false,
+      errorMessage: "",
       query: "",
       results: [],
     };
   },
   template: `<div>
         <h1>UK Politics DB</h1>
-        <p>Write your SQL queries into the below space and hit <code>Execute</code> to see results.</p>
-        <div><textarea v-model="query"></textarea></div>
-        <button v-on:click.prevent="execute">Execute</button>
+        <div v-if="loading">
+            Loading...
+        </div>
+        <div v-if="error">
+            <code>{{errorMessage}}</code>
+        </div>
+        <div v-else>
+            <p>Write your SQL queries into the below space and hit <code>Execute</code> to see results.</p>
+            <div><textarea v-model="query"></textarea></div>
+            <button v-on:click.prevent="execute">Execute</button>
 
-        <table v-for="result in results">
-            <thead>
-                <tr>
-                    <th v-for="column in result.columns">{{column}}</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="row in result.values">
-                    <td v-for="field in row">{{field}}</td>
-                </tr>
-            </tbody>
-        </table>
+            <table v-for="result in results">
+                <thead>
+                    <tr>
+                        <th v-for="column in result.columns">{{column}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="row in result.values">
+                        <td v-for="field in row">{{field}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>`,
+
+  async mounted() {
+    try {
+      await loadTables(["constituencies"], db);
+    } catch (err) {
+      this.error = true;
+      this.errorMessage = err.message;
+    } finally {
+      this.loading = false;
+    }
+  },
 
   methods: {
     execute() {
