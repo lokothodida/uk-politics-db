@@ -9,4 +9,3 @@ lint:
 build:
 	docker-compose run deno deno bundle $(IMPORTS) src/index.js dist/bundle.js
 	cp src/index.html dist/index.html
-
