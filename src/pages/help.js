@@ -10,7 +10,7 @@ export const HelpPage = (db) => ({
     <h2 class="subtitle">List of all Tables</h2>
 
     <div v-for="table in tables">
-        <h3>{{table.name}}</h3>
+        <h3><code>{{table.name}}</code></h3>
         <table class="table">
             <thead>
                 <tr>
@@ -29,16 +29,23 @@ export const HelpPage = (db) => ({
   </div>`,
 
   mounted() {
-    const tableNames = db.exec(
-      "SELECT DISTINCT(tbl_name) FROM sqlite_master WHERE type = 'table'",
-    );
+    this.tables = [].concat(this.load("table"), this.load("view"));
+  },
 
-    this.tables = tableNames[0].values.map(([name]) => {
-      const results = db.exec(`PRAGMA TABLE_INFO(${name})`);
-      return {
-        name: name,
-        ...results[0],
-      };
-    });
+  methods: {
+    load(tableType) {
+      const tableNames = db.exec(
+        "SELECT DISTINCT(tbl_name) FROM sqlite_master WHERE type = ?",
+        [tableType],
+      );
+
+      return tableNames[0].values.map(([name]) => {
+        const results = db.exec(`PRAGMA TABLE_INFO(${name})`);
+        return {
+          name: name,
+          ...results[0],
+        };
+      });
+    },
   },
 });
