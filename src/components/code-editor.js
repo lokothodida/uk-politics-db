@@ -1,5 +1,5 @@
-import "https://www.unpkg.com/codemirror@5.62.3/lib/codemirror.js";
-import "https://www.unpkg.com/codemirror@5.62.3/mode/sql/sql.js";
+import "codemirror/lib/codemirror.js";
+import "codemirror/mode/sql/sql.js";
 
 export const CodeEditor = {
   props: [
