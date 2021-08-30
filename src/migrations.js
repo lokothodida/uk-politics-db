@@ -1,6 +1,8 @@
+import { baseFileUrl } from "config";
+
 export const loadTables = (tables, db) => {
   return Promise.all(tables.map(async (table) => {
-    const resp = await fetch(`/tables/${table}.sql`);
+    const resp = await fetch(`${baseFileUrl}/tables/${table}.sql`);
 
     if (resp.status >= 400) {
       throw fileNotFound(`${table}.sql`);
@@ -22,7 +24,7 @@ export const load2015Election = async (db) => {
 };
 
 export const loadCsv = async (name) => {
-  const resp = await fetch(`/data/${name}.csv`);
+  const resp = await fetch(`${baseFileUrl}/data/${name}.csv`);
 
   if (resp.status >= 400) {
     throw fileNotFound(`${name}.csv`);

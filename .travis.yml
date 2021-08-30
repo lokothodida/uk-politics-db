@@ -3,7 +3,7 @@ services:
 
 script:
   - make lint
-  - make build
+  - make bundle-prod copy-files
 
 deploy:
   provider: pages
