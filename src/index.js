@@ -2,6 +2,7 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 import { init } from "./migrations.js";
 import { PieChart } from "./components/pie-chart.js";
+import { CodeEditor } from "./components/code-editor.js";
 
 Vue.use(VueRouter);
 
@@ -15,6 +16,7 @@ const db = new SQL.Database(new Uint8Array([]));
 const HomePage = (db) => ({
   name: "HomePage",
   components: {
+    "code-editor": CodeEditor,
     "pie-chart": PieChart,
   },
 
@@ -33,14 +35,20 @@ const HomePage = (db) => ({
         <div v-if="loading">
             Loading...
         </div>
+
         <div v-else-if="error">
             <code>{{errorMessage}}</code>
         </div>
+
         <div v-else>
             <p>Write your SQL queries into the below space and hit <code>Execute</code> to see results.</p>
-            <div><textarea v-model="query"></textarea></div>
+            <div>
+              <code-editor mode="sql" v-model="query"></code-editor>
+            </div>
+
             <button v-on:click.prevent="execute">Execute</button>
             <button v-on:click.prevent="share">Share</button>
+
             <p v-if="url"><input type="text" disabled v-model="url"></p>
 
             <div v-for="(result, idx) in results">
