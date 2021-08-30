@@ -9,6 +9,7 @@ Visit at https://lokothodida.github.io/uk-politics-db
 - [SQL.js](https://sql.js.org/)
 - [CodeMirror](https://codemirror.net/)
 - [Bulma](https://bulma.io/)
+- [Github Corners](https://tholman.com/github-corners/)
 
 # Data Sources
 - [2019 General Election](https://commonslibrary.parliament.uk/research-briefings/cbp-8749/)
