@@ -1,4 +1,4 @@
-# UK Politics Database
+# UK Politics Database [![Build Status](https://app.travis-ci.com/lokothodida/uk-politics-db.svg?branch=main)](https://app.travis-ci.com/lokothodida/uk-politics-db)
 A staticly hosted database with information from UK elections, which can be used for building and presenting queries.
 
 # Libraries/tech used
