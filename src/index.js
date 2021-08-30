@@ -1,6 +1,6 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import { load2015Election, loadTables } from "./migrations.js";
+import { init } from "./migrations.js";
 
 Vue.use(VueRouter);
 
@@ -55,8 +55,7 @@ const HomePage = (db) => ({
   async mounted() {
     try {
       this.loadQueryFromUrl();
-      await loadTables(["constituencies"], db);
-      await load2015Election(db);
+      await init(db);
     } catch (err) {
       this.error = true;
       this.errorMessage = err.message;
@@ -71,15 +70,24 @@ const HomePage = (db) => ({
   },
 
   methods: {
+    baseUrl() {
+      return `${window.location.href.replace(window.location.hash, "")}`;
+    },
     share() {
-      this.url = `${window.location.origin}/#/?query=` +
+      this.url = `${this.baseUrl()}#/?query=` +
         encodeURIComponent(this.query);
     },
 
     loadQueryFromUrl() {
-      const query = decodeURIComponent(this.$route.query.query);
+      const values = this.$route.query;
 
-      if (query.length === 0) {
+      if (!("query" in values)) {
+        return;
+      }
+
+      const query = decodeURIComponent(values.query);
+
+      if (!query) {
         return;
       }
 

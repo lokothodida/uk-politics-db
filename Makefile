@@ -6,8 +6,8 @@ lint:
 
 copy-files:
 	cp src/index.html dist/index.html
-	cp -r src/tables dist/tables
-	cp -r data dist/data
+	cp -r src/tables/ dist/
+	cp -r data/ dist/
 
 bundle-dev:
 	docker-compose run deno deno bundle --import-map=imports.dev.json src/index.js dist/bundle.js

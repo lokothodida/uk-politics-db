@@ -1,5 +1,14 @@
 import { baseFileUrl } from "config";
 
+export const init = async (db) => {
+  await loadTables([
+    "constituencies",
+    "general-election",
+    "eu-referendum",
+  ], db);
+  await load2015Election(db);
+};
+
 export const loadTables = (tables, db) => {
   return Promise.all(tables.map(async (table) => {
     const resp = await fetch(`${baseFileUrl}/tables/${table}.sql`);
