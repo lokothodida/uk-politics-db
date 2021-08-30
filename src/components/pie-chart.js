@@ -1,4 +1,4 @@
-import "https://unpkg.com/chart.js@2.7.1/dist/Chart.bundle.js";
+import "chart.js";
 
 export const PieChart = {
   props: ["height", "width", "title", "data"],
