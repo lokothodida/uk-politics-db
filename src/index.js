@@ -1,6 +1,7 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
 import { init } from "./migrations.js";
+import { PieChart } from "./components/pie-chart.js";
 
 Vue.use(VueRouter);
 
@@ -12,6 +13,11 @@ const SQL = await initSqlJs({
 const db = new SQL.Database(new Uint8Array([]));
 
 const HomePage = (db) => ({
+  name: "HomePage",
+  components: {
+    "pie-chart": PieChart,
+  },
+
   data() {
     return {
       loading: true,
@@ -37,18 +43,27 @@ const HomePage = (db) => ({
             <button v-on:click.prevent="share">Share</button>
             <p v-if="url"><input type="text" disabled v-model="url"></p>
 
-            <table v-for="result in results">
-                <thead>
-                    <tr>
-                        <th v-for="column in result.columns">{{column}}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="row in result.values">
-                        <td v-for="field in row">{{field}}</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div v-for="(result, idx) in results">
+                <select :key="resultKey(idx, 'select')" v-model="results[idx].chartType">
+                    <option value="pie">Pie Chart</option>
+                    <option value="table">Table</option>
+                </select>
+
+                <table :key="resultKey(idx, 'table')" v-if="result.chartType === 'table'">
+                    <thead>
+                        <tr>
+                            <th v-for="column in result.columns">{{column}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="row in result.values">
+                            <td v-for="field in row">{{field}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <pie-chart :key="resultKey(idx, 'pie')" v-if="results[idx].chartType === 'pie'" :data="pieChart(result)"></pie-chart>
+            </div>
         </div>
     </div>`,
 
@@ -97,9 +112,29 @@ const HomePage = (db) => ({
     execute() {
       try {
         this.results = db.exec(this.query);
+        this.results = this.results.map((result) => {
+          this.$set(result, "chartType", "table");
+          return result;
+        });
       } catch (err) {
         alert(`Failed to execute query: ${err.message}`);
       }
+    },
+
+    resultKey(idx, type) {
+      return `result-${type}-${idx}`;
+    },
+
+    pieChart(result) {
+      const valueIdx = result.columns.indexOf("value");
+      const labelIdx = result.columns.indexOf("label");
+      const colourIdx = result.columns.indexOf("colour");
+
+      return result.values.map((item) => ({
+        label: item[labelIdx],
+        value: item[valueIdx],
+        colour: item[colourIdx] || "#cccccc",
+      }));
     },
   },
 });
