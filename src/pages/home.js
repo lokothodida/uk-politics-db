@@ -1,7 +1,6 @@
 import { CodeEditor } from "../components/code-editor.js";
 import { PieChart } from "../components/pie-chart.js";
 import { LineChart } from "../components/line-chart.js";
-import { init } from "../migrations.js";
 
 export const HomePage = (db) => ({
   name: "HomePage",
@@ -75,10 +74,9 @@ export const HomePage = (db) => ({
           </div>
       </div>`,
 
-  async mounted() {
+  mounted() {
     try {
       this.loadQueryFromUrl();
-      await init(db);
     } catch (err) {
       this.error = true;
       this.errorMessage = err.message;
