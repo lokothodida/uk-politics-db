@@ -6,4 +6,4 @@ services:
         working_dir: /app
         image: denoland/deno:alpine
         volumes:
-            - $TRAVIS_BUILD_DIR:/app
+            - ./:/app

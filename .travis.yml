@@ -2,4 +2,4 @@ services:
   - docker
 
 script:
-  - docker-compose run deno deno bundle src/index.js dist/bundle.js
+  - docker-compose run deno ls
