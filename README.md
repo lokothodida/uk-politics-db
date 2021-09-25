@@ -1,4 +1,4 @@
-# UK Politics Database ![Build Status](https://github.com/lokothodida/uk-politics-db/actions/workflows/ci-test.yaml/badge.svg?branch=main)
+# UK Politics Database ![Build Status](https://github.com/lokothodida/uk-politics-db/actions/workflows/ci-tests.yaml/badge.svg?branch=main)
 A staticly hosted database with information from UK elections, which can be used for building and presenting queries.
 
 Visit at https://lokothodida.github.io/uk-politics-db
