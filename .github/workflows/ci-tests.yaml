@@ -1,0 +1,12 @@
+name: CI Tests
+on:
+  - push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Linting ✅
+        run: make lint
+      - name: Building 🛠️
+        run: make bundle-prod copy-files
