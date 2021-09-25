@@ -5,5 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: make lint
-      - run: make bundle-prod copy-files
+      - name: Linting ✅
+        run: make lint
+      - name: Building 🛠️
+        run: make bundle-prod copy-files
