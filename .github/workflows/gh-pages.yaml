@@ -1,6 +1,8 @@
 name: Github Pages Deployment
 on:
-  - push
+  push:
+    branches:
+      - $default-branch
 jobs:
   deploy:
     runs-on: ubuntu-latest
